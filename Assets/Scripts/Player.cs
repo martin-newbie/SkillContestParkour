@@ -13,7 +13,9 @@ public enum PlayerState
 
 public class Player : MonoBehaviour
 {
-    Rigidbody2D rb;
+    public Rigidbody2D rb;
+    Vector3 startPos;
+    public int startCount;
     public PlayerState state;
     public int moveCount;
 
@@ -72,21 +74,57 @@ public class Player : MonoBehaviour
     public float jumpHeight;
     public int dir;
     public bool active;
-
+    public bool gameEnd;
+    public int life;
+    public float lifeTime;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        startPos = transform.position;
+        moveCount = startCount;
+    }
+
+    void Replay()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            life--;
+            if(life < 0)
+            {
+                // go back to title
+                return;
+            }
+
+            transform.position = startPos;
+            moveCount = startCount;
+            state = PlayerState.StandBy;
+            dir = 1;
+            active = false;
+        }
+    }
+
+    void SetUI()
+    {
+        InGameUIManager.Instance.SetMoveCount(moveCount);
+        InGameUIManager.Instance.SetScore(0f);
+        InGameUIManager.Instance.SetTime(lifeTime);
     }
 
     void Update()
     {
+        if (gameEnd) return;
+        InGameUIManager.Instance.SetLife(life);
         if (!active)
         {
             GameStartFunc();
             return;
         }
 
+        SetUI();
+        Replay();
+        lifeTime += Time.deltaTime;
         switch (state)
         {
             case PlayerState.StandBy:
