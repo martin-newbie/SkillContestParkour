@@ -15,6 +15,7 @@ public class Player : MonoBehaviour
 {
     Rigidbody2D rb;
     public PlayerState state;
+    public int moveCount;
 
     [Header("Movement")]
     public float radius;
@@ -23,18 +24,54 @@ public class Player : MonoBehaviour
     public Transform ArmPos;
     public Transform HeadFrontPos;
 
-    public bool JumpOverAble => !Physics2D.OverlapCircle(HeadFrontPos.position, radius, LayerMask.GetMask("Ground")) && IsHover;
+    public bool JumpOverAble => !Physics2D.OverlapCircle(HeadFrontPos.position, radius, LayerMask.GetMask("Ground")) && Physics2D.OverlapCircle(ArmPos.position, radius, LayerMask.GetMask("Ground"));
     public bool WallGrabAble => Physics2D.OverlapCircle(ArmPos.position, radius, LayerMask.GetMask("Ground")) && IsHover;
     public bool JumpAble => !IsHover && Physics2D.OverlapCircle(TopPos.position, radius, LayerMask.GetMask("Ground"));
     public bool IsHover => !Physics2D.OverlapCircle(FeetPos.position, radius, LayerMask.GetMask("Ground"));
-    public bool LeftMove => Input.GetKeyDown(KeyCode.LeftArrow) && dir == 1;
-    public bool RightMove => Input.GetKeyDown(KeyCode.RightArrow) && dir == -1;
-    public bool Jump => Input.GetKeyDown(KeyCode.UpArrow) && (!IsHover || state == PlayerState.Holding);
+
+
+    public bool LeftMove
+    {
+        get
+        {
+            if (moveCount > 0 && Input.GetKeyDown(KeyCode.LeftArrow) && dir == 1)
+            {
+                moveCount--;
+                return true;
+            }
+            else return false;
+        }
+    }
+    public bool RightMove
+    {
+        get
+        {
+            if (moveCount > 0 && Input.GetKeyDown(KeyCode.RightArrow) && dir == -1)
+            {
+                moveCount--;
+                return true;
+            }
+            else return false;
+        }
+    }
+    public bool Jump
+    {
+        get
+        {
+            if (moveCount > 0 && Input.GetKeyDown(KeyCode.UpArrow) && (!IsHover || state == PlayerState.Holding))
+            {
+                moveCount--;
+                return true;
+            }
+            else return false;
+        }
+    }
 
     [Header("Value")]
     public float moveSpeed;
     public float jumpHeight;
     public int dir;
+    public bool active;
 
 
     void Start()
@@ -44,10 +81,15 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        if (!active)
+        {
+            GameStartFunc();
+            return;
+        }
+
         switch (state)
         {
             case PlayerState.StandBy:
-                StandbyFunc();
                 break;
             case PlayerState.Moving:
                 MoveInput();
@@ -65,7 +107,7 @@ public class Player : MonoBehaviour
 
     void RotateFunc()
     {
-        if(dir == -1)
+        if (dir == -1)
         {
             transform.rotation = Quaternion.Euler(0, 0, 0);
         }
@@ -77,6 +119,8 @@ public class Player : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!active) return;
+
         switch (state)
         {
             case PlayerState.StandBy:
@@ -129,17 +173,19 @@ public class Player : MonoBehaviour
         RotateFunc();
     }
 
-    void StandbyFunc()
+    void GameStartFunc()
     {
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             state = PlayerState.Moving;
             dir = -1;
+            active = true;
         }
         else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             state = PlayerState.Moving;
             dir = 1;
+            active = true;
         }
         rb.gravityScale = 3f;
     }
@@ -165,6 +211,15 @@ public class Player : MonoBehaviour
         rb.gravityScale = 0f;
     }
 
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (JumpOverAble && state != PlayerState.StandBy)
+        {
+            state = PlayerState.StandBy;
+            StartCoroutine(JumpOverCoroutine());
+        }
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
@@ -173,7 +228,29 @@ public class Player : MonoBehaviour
             {
                 rb.velocity = Vector2.zero;
                 state = PlayerState.Holding;
+
+                if (JumpOverAble)
+                {
+                    state = PlayerState.StandBy;
+                    StartCoroutine(JumpOverCoroutine());
+                }
             }
         }
+    }
+
+    IEnumerator JumpOverCoroutine()
+    {
+        float timer = 0.5f;
+        do
+        {
+            rb.gravityScale = 0f;
+            transform.Translate(Vector3.up * Time.deltaTime * 2f);
+
+            timer -= Time.deltaTime;
+            yield return null;
+        } while (timer > 0f);
+
+        state = PlayerState.Moving;
+        yield break;
     }
 }
