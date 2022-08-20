@@ -27,9 +27,10 @@ public class InGameManager : Singleton<InGameManager>
 
     public float[] targetTimes = new float[3];
     public int[] targetCounts = new int[3];
+    public int[] startCounts = new int[3];
     public int mapIdx;
 
-    private void Start()
+    private void Awake()
     {
         mapIdx = PlayerPrefs.GetInt("idx", 0);
         for (int i = 0; i < Maps.Length; i++)
@@ -41,17 +42,23 @@ public class InGameManager : Singleton<InGameManager>
 
     public void GameClear()
     {
-        player.rb.gravityScale = 0f;
-        player.rb.velocity = Vector2.zero;
-        player.state = PlayerState.StandBy;
-        player.gameEnd = true;
-
+        PlayerStop();
         GameResult result = new GameResult(true, player.lifeTime, targetTimes[mapIdx], player.moveCount, targetCounts[mapIdx]);
         InGameUIManager.Instance.PrintResult(result);
     }
 
     public void GameOver()
     {
+        PlayerStop();
+        GameResult result = new GameResult(false, player.lifeTime, targetTimes[mapIdx], player.moveCount, targetCounts[mapIdx]);
+        InGameUIManager.instance.PrintResult(result);
+    }
 
+    void PlayerStop()
+    {
+        player.rb.gravityScale = 0f;
+        player.rb.velocity = Vector2.zero;
+        player.state = PlayerState.StandBy;
+        player.gameEnd = true;
     }
 }

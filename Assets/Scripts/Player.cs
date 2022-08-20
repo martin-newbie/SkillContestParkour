@@ -18,6 +18,7 @@ public class Player : MonoBehaviour
     public int startCount;
     public PlayerState state;
     public int moveCount;
+    public int gravityDir = 1;
 
     [Header("Movement")]
     public float radius;
@@ -77,11 +78,12 @@ public class Player : MonoBehaviour
     public bool gameEnd;
     public int life;
     public float lifeTime;
+    public float score;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-
+        startCount = InGameManager.Instance.startCounts[InGameManager.Instance.mapIdx];
         startPos = transform.position;
         moveCount = startCount;
     }
@@ -93,7 +95,7 @@ public class Player : MonoBehaviour
             life--;
             if(life < 0)
             {
-                // go back to title
+                InGameManager.Instance.GameOver();
                 return;
             }
 
@@ -114,8 +116,8 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        if (gameEnd) return;
         InGameUIManager.Instance.SetLife(life);
+        if (gameEnd) return;
         if (!active)
         {
             GameStartFunc();
@@ -145,14 +147,11 @@ public class Player : MonoBehaviour
 
     void RotateFunc()
     {
-        if (dir == -1)
-        {
-            transform.rotation = Quaternion.Euler(0, 0, 0);
-        }
-        else
-        {
-            transform.rotation = Quaternion.Euler(0, 180, 0);
-        }
+
+        float x = gravityDir == 1 ? 0 : 180;
+        float y = dir == -1 ? 0 : 180;
+
+        transform.rotation = Quaternion.Euler(x, y, 0);
     }
 
     private void FixedUpdate()
@@ -199,7 +198,7 @@ public class Player : MonoBehaviour
 
         if (Jump)
         {
-            rb.AddForce(new Vector2(0, jumpHeight), ForceMode2D.Impulse);
+            rb.AddForce(new Vector2(0, jumpHeight * gravityDir), ForceMode2D.Impulse);
             state = PlayerState.Jumping;
         }
     }
@@ -207,7 +206,7 @@ public class Player : MonoBehaviour
     void MovingFunc()
     {
         transform.Translate(transform.right * Time.deltaTime * moveSpeed * dir);
-        rb.gravityScale = 3f;
+        rb.gravityScale = 3f * gravityDir;
         RotateFunc();
     }
 
@@ -225,7 +224,7 @@ public class Player : MonoBehaviour
             dir = 1;
             active = true;
         }
-        rb.gravityScale = 3f;
+        rb.gravityScale = 3f * gravityDir;
     }
 
     void HoldInput()
@@ -233,13 +232,13 @@ public class Player : MonoBehaviour
         if (LeftMove)
         {
             dir = -1;
-            rb.AddForce(new Vector2(5f * dir, jumpHeight), ForceMode2D.Impulse);
+            rb.AddForce(new Vector2(5f * dir, jumpHeight * gravityDir), ForceMode2D.Impulse);
             state = PlayerState.Jumping;
         }
         else if (RightMove)
         {
             dir = 1;
-            rb.AddForce(new Vector2(5f * dir, jumpHeight), ForceMode2D.Impulse);
+            rb.AddForce(new Vector2(5f * dir, jumpHeight * gravityDir), ForceMode2D.Impulse);
             state = PlayerState.Jumping;
         }
     }
@@ -273,6 +272,40 @@ public class Player : MonoBehaviour
                     StartCoroutine(JumpOverCoroutine());
                 }
             }
+        }
+
+        if (collision.gameObject.CompareTag("Hostile"))
+        {
+            Hit();
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Item"))
+        {
+            score += 10;
+            Destroy(collision.gameObject);
+        }
+
+        if (collision.CompareTag("Hostile"))
+        {
+            Hit();
+        }
+
+        if (collision.CompareTag("Gravity"))
+        {
+            gravityDir = collision.GetComponent<GravityUpsideDown>().gravityDir;
+        }
+    }
+
+    void Hit()
+    {
+        life--;
+
+        if (life < 0 && !gameEnd)
+        {
+            InGameManager.Instance.GameOver();
         }
     }
 
