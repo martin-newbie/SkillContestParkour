@@ -241,7 +241,7 @@ GameObject:
   m_Component:
   - component: {fileID: 59892737}
   - component: {fileID: 59892736}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Prowler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -573,7 +573,7 @@ GameObject:
   - component: {fileID: 169627290}
   - component: {fileID: 169627289}
   - component: {fileID: 169627291}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Stalker
   m_TagString: Hostile
   m_Icon: {fileID: 0}
