@@ -15943,9 +15943,9 @@ MonoBehaviour:
   player: {fileID: 691947779}
   targetTimes:
   - 25
-  - 0
-  - 0
-  targetCounts: 010000000000000000000000
+  - 30
+  - 35
+  targetCounts: 01000000190000002d000000
   startCounts: 190000003700000069000000
   mapIdx: 1
 --- !u!1 &1964810401
